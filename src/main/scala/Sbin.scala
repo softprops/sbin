@@ -3,9 +3,9 @@ package sbin
 import unfiltered.request._
 import unfiltered.response._
 
-class App extends Persistence with Templates with unfiltered.Plan {
+class App extends Config with Persistence with Templates with unfiltered.Plan {
   def filter = {
-    case GET(Path("/", _)) => home
+    case GET(Path("/", _)) => home(db.list("recent", 0, listSize))
     case POST(Path("/", Params(params, _))) => params("body") match {
       case Seq(body) => {
         val key = java.util.UUID.randomUUID.toString
@@ -21,12 +21,21 @@ class App extends Persistence with Templates with unfiltered.Plan {
   }
 }
 
+trait Config {
+  def ttl = 60 * 60 * 24
+  def listSize = 10
+  val validAuth = ("admin", "admin")
+}
+
 trait Templates {
-  def home = layout(<span>home</span>)(
-     <form action="/" method="POST">
+  def home(l: Option[List[Option[String]]]) = layout(<span>home</span>)(
+     <div>
+      <form action="/" method="POST">
        <textarea name="body" />
        <input type="submit" value="Post" />
-     </form>
+      </form>
+      <ul></ul>
+     </div>
   )
   
   def snip(key: String, value: String) = layout(
@@ -61,18 +70,34 @@ trait Templates {
   )
 }
  
-trait Persistence {
+trait Persistence { self: Config =>
   class Store {
     import com.redis._
     private val redis = new RedisClient("localhost", 6379)
-    def apply(k: String, v: String): Boolean = redis.set(k, v)
+    def apply(k: String, v: String): Boolean =
+      redis.set(k, v) && redis.expire(k, ttl) && redis.rpush("recent", k)
     def apply(k: String): Option[String] = redis.get(k)
+    def list(k: String, start: Int, end: Int): Option[List[Option[String]]] = redis.lrange(k, start, end) 
   }
   protected val db = new Store
 }
 
+class Auth extends Config with unfiltered.Plan {
+  private def auth(r: javax.servlet.http.HttpServletRequest) = r match { 
+    case BasicAuth(a, _) => a match {
+      case (validAuth._1, validAuth._2) => Pass
+      case _ => Unauthorized ~> WWWAuthenticate("Basic realm=\"/\"")
+    }
+    case _ => Unauthorized ~> WWWAuthenticate("Basic realm=\"/\"")
+  }
+  def filter = {
+    case GET(r) => auth(r)
+    case POST(r) => auth(r)
+  }
+}
+
 object Server {
   def main(args: Array[String]) {
-    unfiltered.server.Http(8080).filter(new App).run
+    unfiltered.server.Http(8080).filter(new Auth).filter(new App).run
   }
 }
