@@ -91,8 +91,7 @@ class Auth extends Config with unfiltered.Plan {
     case _ => Unauthorized ~> WWWAuthenticate("Basic realm=\"/\"")
   }
   def filter = {
-    case GET(r) => auth(r)
-    case POST(r) => auth(r)
+    case r:javax.servlet.http.HttpServletRequest => auth(r)
   }
 }
 
