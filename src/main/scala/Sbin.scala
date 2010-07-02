@@ -83,15 +83,15 @@ trait Persistence { self: Config =>
 }
 
 class Auth extends Config with unfiltered.Plan {
-  private def auth(r: javax.servlet.http.HttpServletRequest) = r match { 
-    case BasicAuth(a, _) => a match {
-      case (validAuth._1, validAuth._2) => Pass
-      case _ => Unauthorized ~> WWWAuthenticate("Basic realm=\"/\"")
-    }
-    case _ => Unauthorized ~> WWWAuthenticate("Basic realm=\"/\"")
-  }
+  val Fail = Unauthorized ~> WWWAuthenticate("Basic realm=\"/\"")
   def filter = {
-    case r:javax.servlet.http.HttpServletRequest => auth(r)
+    case r: javax.servlet.http.HttpServletRequest => r match { 
+      case BasicAuth(a, _) => a match {
+        case (validAuth._1, validAuth._2) => Pass
+        case _ => Fail
+      }
+      case _ => Fail
+    }
   }
 }
 
