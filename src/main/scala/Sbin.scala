@@ -3,12 +3,11 @@ package sbin
 import unfiltered.request._
 import unfiltered.response._
 
-class App extends Config with Persistence with Templates with unfiltered.Plan {
+class App extends Config with Hashing with Persistence with Templates with unfiltered.Plan {
   def filter = {
     case GET(Path("/", _)) => home(db.list("recent", 0, listSize))
     case POST(Path("/", Params(params, _))) => params("body") match {
-      case Seq(body) => {
-        val key = java.util.UUID.randomUUID.toString
+      case Seq(body) => hash(body.toString) { key =>
         db(key, body.toString)
         Redirect("/" + key)
       }
@@ -27,6 +26,16 @@ trait Config {
   val validAuth = ("admin", "admin")
 }
 
+trait Hashing {
+  import org.apache.commons.codec.binary.Base64.encodeBase64;
+  import java.security.MessageDigest;
+  val keyLength = 6
+  def hash[T](value: String)(f: String => T) = f(new java.math.BigInteger(1, MessageDigest.getInstance("MD5").digest(value.getBytes("utf8"))).toString(16) match {
+    case str: String if (str.length < keyLength) => str
+    case str: String => str.substring(0, keyLength)
+  })
+}
+
 trait Templates {
   def home(l: Option[List[Option[String]]]) = layout(<span>home</span>)(
      <div>
@@ -41,7 +50,7 @@ trait Templates {
   def snip(key: String, value: String) = layout(
     <a href={"/"+key}>{ key }</a>)(
     <div id="snip">
-      <pre>{ value.trim }</pre>
+      <pre><code>{ value.trim }</code></pre>
     </div>
   )
   
@@ -74,8 +83,10 @@ trait Persistence { self: Config =>
   class Store {
     import com.redis._
     private val redis = new RedisClient("localhost", 6379)
-    def apply(k: String, v: String): Boolean =
+    def apply(k: String, v: String): Boolean = {
+      println("setting val to " + v)
       redis.set(k, v) && redis.expire(k, ttl) && redis.rpush("recent", k)
+    }
     def apply(k: String): Option[String] = redis.get(k)
     def list(k: String, start: Int, end: Int): Option[List[Option[String]]] = redis.lrange(k, start, end) 
   }
