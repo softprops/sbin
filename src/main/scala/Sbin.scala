@@ -27,7 +27,6 @@ trait Config {
 }
 
 trait Hashing {
-  import org.apache.commons.codec.binary.Base64.encodeBase64;
   import java.security.MessageDigest;
   val keyLength = 6
   def hash[T](value: String)(f: String => T) = f(new java.math.BigInteger(1, MessageDigest.getInstance("MD5").digest(value.getBytes("utf8"))).toString(16) match {
