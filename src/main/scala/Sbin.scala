@@ -55,6 +55,7 @@ trait Templates {
   def layout(path: scala.xml.Elem)(body: scala.xml.Elem) = Html(
     <html>
       <head>
+        <title>sbin</title>
         <style type="text/css">
           { """
             * { margin:0; padding:0; }
