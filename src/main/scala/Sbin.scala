@@ -23,7 +23,6 @@ class App extends Config with Hashing with Persistence with Templates with unfil
 trait Config {
   def ttl = 60 * 60 * 24
   def listSize = 10
-  val validAuth = ("admin", "admin")
 }
 
 trait Hashing {
@@ -92,12 +91,12 @@ trait Persistence { self: Config =>
   protected val db = new Store
 }
 
-class Auth extends Config with unfiltered.Plan {
+class Auth(user: String, password: String) extends unfiltered.Plan {
   val Fail = Unauthorized ~> WWWAuthenticate("Basic realm=\"/\"")
   def filter = {
     case r: javax.servlet.http.HttpServletRequest => r match { 
       case BasicAuth(a, _) => a match {
-        case (validAuth._1, validAuth._2) => Pass
+        case (u, p) if(u == user && p == password) => Pass
         case _ => Fail
       }
       case _ => Fail
@@ -106,7 +105,12 @@ class Auth extends Config with unfiltered.Plan {
 }
 
 object Server {
+  val Creds = """^(\w+):(\w+)$""".r
   def main(args: Array[String]) {
-    unfiltered.server.Http(8080).filter(new Auth).filter(new App).run
+    val (username, password) = args match {
+      case Array(Creds(u, p)) => (u, p)
+      case _ => ("admin", "admin")
+    }
+    unfiltered.server.Http(8080).filter(new Auth(username, password)).filter(new App).run
   }
 }
