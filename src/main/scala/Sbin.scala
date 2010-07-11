@@ -67,6 +67,7 @@ trait Templates {
             h1 a.sbin, a.visited { color:#7A7676; }
             a:link, a:visited { color:#F7004E; text-decoration:none; }
             a:hover { color:#FDC4D6; }
+            input[type="submit"] { float:right; }
             """.stripMargin }
         </style>
       </head>
@@ -83,7 +84,6 @@ trait Persistence { self: Config =>
     import com.redis._
     private val redis = new RedisClient("localhost", 6379)
     def apply(k: String, v: String): Boolean = {
-      println("setting val to " + v)
       redis.set(k, v) && redis.expire(k, ttl) && redis.rpush("recent", k)
     }
     def apply(k: String): Option[String] = redis.get(k)
