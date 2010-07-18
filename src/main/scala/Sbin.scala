@@ -5,7 +5,7 @@ import unfiltered.response._
 
 class App extends Config with Hashing with Persistence with Templates with unfiltered.Plan {
   def filter = {
-    case GET(Path("/", _)) => home(db.list("recent", 0, listSize))
+    case GET(Path("/", _)) => home(db.list("recent", 0, listSize - 1))
     case POST(Path("/", Params(params, _))) => params("body") match {
       case Seq(body) => hash(body.toString) { key =>
         db(key, body.toString)
@@ -42,7 +42,11 @@ trait Templates {
        <textarea name="body" />
        <input type="submit" class="btn" value="Paste this" />
       </form>
-      <ul></ul>
+      <ul>{(l match { 
+            case Some(list) => list filter { _.isDefined } flatMap { case str => str } 
+            case _ => Nil 
+          }) map { s => <li><a href={s}>{s}</a></li> }
+      }</ul>
      </div>
   )
   
@@ -85,6 +89,8 @@ trait Templates {
             a:link, a:visited { color:#F7004E; text-decoration:none; }
             a:hover { color:#FDC4D6; }
             input[type='submit'] { float:right; }
+            ul {list-style:none; margin:0; padding:0;}
+            li { float:left; margin-right:.5em; }
             .btn {
               background: #222 url(/images/alert-overlay.png) repeat-x;
               display: inline-block;
@@ -121,7 +127,7 @@ trait Persistence { self: Config =>
     import com.redis._
     private val redis = new RedisClient("localhost", 6379)
     def apply(k: String, v: String): Boolean = {
-      redis.set(k, v) && redis.expire(k, ttl) && redis.rpush("recent", k)
+      redis.set(k, v) && redis.expire(k, ttl) && redis.lpush("recent", k)
     }
     def apply(k: String): Option[String] = redis.get(k)
     def list(k: String, start: Int, end: Int): Option[List[Option[String]]] = redis.lrange(k, start, end) 
