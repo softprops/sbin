@@ -13,6 +13,7 @@ class App extends Config with Hashing with Persistence with Templates with unfil
       }
       case _ => Redirect("/")
     } 
+    case GET(Path("/readme", _)) => readme
     case GET(Path(Seg(key :: Nil), _)) => db(key) match {
       case Some(value) => snip(key, value)
       case _ =>  NotFound
@@ -35,11 +36,11 @@ trait Hashing {
 }
 
 trait Templates {
-  def home(l: Option[List[Option[String]]]) = layout(<span>home</span>)(
+  def home(l: Option[List[Option[String]]]) = layout(<span></span>)(
      <div>
       <form action="/" method="POST">
        <textarea name="body" />
-       <input type="submit" value="Post" />
+       <input type="submit" class="btn" value="Paste this" />
       </form>
       <ul></ul>
      </div>
@@ -52,6 +53,20 @@ trait Templates {
     </div>
   )
   
+  
+  lazy val readme = layout(
+    <span>readme</span>)(
+    <div id="read">
+      <h1>features</h1>
+      <h2>minimal.</h2>
+      <p>one text box</p>
+      <h2>pasting.</h2>
+      <p>one button</p>
+      <h2>brief.</h2>
+      <p>pastings life for one day</p>
+    </div>
+  )
+  
   def layout(path: scala.xml.Elem)(body: scala.xml.Elem) = Html(
     <html>
       <head>
@@ -59,21 +74,43 @@ trait Templates {
         <style type="text/css">
           { """
             * { margin:0; padding:0; }
-            body, textarea, input { color:#333; font-family:helvetica; font-size: 24px;}
-            textarea { border:1px solid #eee; height:65%; width:98%; margin:0 auto; display:block; padding:.5em; margin:1em .5em; }
-            #snip { margin:.5em; padding:.5em; border:1px solid #eee; }
+            body { background:#fafafa; }
+            body, textarea, input { color:#333; font-family:helvetica, arial; font-size: 24px; }
+            textarea { border:1px solid #eee; min-height:50%; width:100%; margin:0 auto; display:block; padding:.5em; margin:1em 0; }
+            #snip { margin:.5em; background:#fff; padding:.5em; border:1px solid #eee; }
             pre { padding:0; font-family: Consolas, "Lucida Console", Monaco, monospace; }
             h1 .sl { color:#eee; margin:.25em; }
             h1 a.sbin, a.visited { color:#7A7676; }
+            h1, h2 { margin:.25em 0; }
             a:link, a:visited { color:#F7004E; text-decoration:none; }
             a:hover { color:#FDC4D6; }
-            input[type="submit"] { float:right; }
+            input[type='submit'] { float:right; }
+            .btn {
+              background: #222 url(/images/alert-overlay.png) repeat-x;
+              display: inline-block;
+              padding: 5px 10px 6px;
+              color: #fff;
+              text-decoration: none;
+              font-weight: bold;
+              line-height: 1;
+              -moz-border-radius: 5px;
+              -webkit-border-radius: 5px;
+              -moz-box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+              -webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+              text-shadow: 0 -1px 1px rgba(0,0,0,0.25);
+              border-bottom: 1px solid rgba(0,0,0,0.25);
+              position: relative;
+              cursor: pointer;
+            }
+            #container { margin:1em;}
             """.stripMargin }
         </style>
       </head>
       <body>
+       <div id="container">
        <h1><span class="sl">/</span><a href="/" class="sbin">sbin</a><span class="sl">/</span>{path}</h1>
        { body }
+       </div>
       </body>
     </html>
   )
