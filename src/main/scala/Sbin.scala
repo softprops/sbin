@@ -155,6 +155,6 @@ object Server {
       case Array(Creds(u, p)) => (u, p)
       case _ => ("admin", "admin")
     }
-    unfiltered.server.Http(8080).filter(new Auth(username, password)).filter(new App).start
+    unfiltered.server.Http(8080).filter(new Auth(username, password)).filter(new App).run
   }
 }
