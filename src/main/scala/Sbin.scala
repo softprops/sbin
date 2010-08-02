@@ -151,10 +151,11 @@ class Auth(user: String, password: String) extends unfiltered.Plan {
 object Server {
   val Creds = """^(\w+):(\w+)$""".r
   def main(args: Array[String]) {
-    val (username, password) = args match {
-      case Array(Creds(u, p)) => (u, p)
-      case _ => ("admin", "admin")
+    val (username, password, port): (String, String, Int) = args match {
+      case Array(Creds(u, p), port) => try { (u, p, port.toInt) } catch { case _ => (u, p, 8080) }
+      case Array(Creds(u, p)) => (u, p, 8080)
+      case _ => ("admin", "admin", 8080)
     }
-    unfiltered.server.Http(8080).filter(new Auth(username, password)).filter(new App).run
+    unfiltered.server.Http(port).filter(new Auth(username, password)).filter(new App).run
   }
 }

@@ -33,3 +33,11 @@ Run with provided username and password
     
 Will start server at http://localhost:8080 with login/password "jim"/"jam"
 
+
+Run with provided username and password and port
+
+    > sbt
+    run jim:jam 3000
+    
+Will start server at http://localhost:3000 with login/password "jim"/"jam"
+
